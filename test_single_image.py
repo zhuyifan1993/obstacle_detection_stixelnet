@@ -15,7 +15,7 @@ from albumentations import (
 import tensorflow.keras.backend as K
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model_path", required=True)
+parser.add_argument("--model_path", required=False)
 # parser.add_argument(
 #     "--image_path", re=True
 # )
@@ -43,6 +43,7 @@ def test_single_image(model, img, label_size=(100, 50)):
 
 
 def main(args):
+    args.model_path = "saved_models/model.h5"
     assert os.path.isfile(args.model_path)
     # assert os.path.isfile(args.image_path)
     from config import Config
@@ -74,12 +75,27 @@ def main(args):
         632,
         700,
     )
-    for i, idx in tqdm.tqdm(enumerate(indices)):
-        img, _ = val_set[idx]
-        img = img[0]
 
-        result = test_single_image(model, img)
-        cv2.imwrite("result{}.png".format(i), result)
+    # load MTCE data recording, Mbilly3 camera_SVM_front
+    from mtce_data_apis.interfaces.database_interface import db
+
+    selection = db.get_user_selections(user='yifan')['yifan'][0]
+    sequence = selection.sequences[0]
+    print("sequence:", sequence)
+    frame = sequence[0]
+    print("image size:", frame.camera_SVM_front.image.shape)
+
+    for i, img in tqdm.tqdm(enumerate(sequence)):
+        image = img.camera_SVM_front.image
+        result = test_single_image(model, image)
+        cv2.imwrite("result_mbilly3_{}.png".format(i), result)
+
+    # for i, idx in tqdm.tqdm(enumerate(indices)):
+    #     img, _ = val_set[idx]
+    #     img = img[0]
+
+    #     result = test_single_image(model, img)
+    #     cv2.imwrite("result{}.png".format(i), result)
 
 
 if __name__ == "__main__":
